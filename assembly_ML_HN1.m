@@ -17,7 +17,7 @@ function ML_bulk = assembly_ML_HN1(Nodes_bulk,Elements_bulk,N_Omega)
         
                 M = [x1;x2;x3];
         
-                v(i) = polyarea(M(:,1),M(:,2));
+                v(i) = v(i) + polyarea(M(:,1),M(:,2));
             end
         end
     end
