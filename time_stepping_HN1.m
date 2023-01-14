@@ -49,12 +49,12 @@ function [sol_alpha,sol_beta] = time_stepping_HN1(S_bulk,M_bulk,Nodes_bulk, Elem
         b = [v_1; v_2]; % rhs
         
         % true solution for CH HN1
-        %{
+        %
         fun = @(x) (K * x) + b + (1/epsilon) * f_nonlin_HN(ML_bulk, x, N_Omega) ; % final funtion to solve
         %}
         
         % Inhomogenous rhs for convergence plots
-        %
+        %{
         rhs1 = @(x) -exp(-i*tau) * ((norm(x)^2 - 1)^2 + 2 * sigma * norm(x)^2);
         v1 = zeros(N_Omega,1);
         
