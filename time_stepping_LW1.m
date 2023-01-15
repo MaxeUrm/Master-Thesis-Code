@@ -55,7 +55,7 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi,sol_zeta] = time_stepping_LW1(S_bu
     
     for i = 1:N
         
-        i % Step
+        %i % Step
         
         % construct rhs out of prevous step
         
@@ -70,11 +70,55 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi,sol_zeta] = time_stepping_LW1(S_bu
         
         b = [v_1; v_2; v_3; v_4; v_5]; % rhs
         
+        % true solution forCH LW1
+        %{
         fun = @(x) K * x + b + f_nonlin_LW1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, delta); % final funtion to solve
+        %}
+        
+        % Inhomogenous rhs for convergence plot tests OG
+        %
+        rhs1 = @(x) -exp(-i*tau) * norm(x)^2 - 8 * sigma * exp(-i*tau) * (2*norm(x)^2 -1);
+        v1 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v1(j) = rhs1(Nodes_bulk(j,:));
+        end
+        
+        v1 = tau * ML_bulk * v1; % Mass lumping for approximation
+        
+        rhs2 = @(x) - 4 * epsilon * exp(-i*tau) + 1/epsilon * (exp(-3*i*tau) * norm(x)^6 - exp(-i*tau) * norm(x)^2) -exp(-i*tau) * (norm(x)^2 -1)^2;
+        v2 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v2(j) = rhs2(Nodes_bulk(j,:));
+        end
+        
+        v2 = ML_bulk * v2; % Mass lumping for approximation
+        
+        rhs3 = @(x) - exp(-i*tau);
+        v3 = zeros(N_Gamma,1);
+        
+        for j = 1:N_Gamma
+            v3(j) = rhs3(Nodes_surf(j,:));
+        end
+        v3 = tau * ML_surf * v3;
+        
+        
+        rhs4 = @(x) - 4 * delta * kappa * exp(-i*tau) * 0 + 1/delta * (exp(-3*i*tau) - exp(-i*tau)) + 2 * epsilon * exp(-i*tau) - exp(-i*tau);
+        v4 = zeros(N_Gamma,1);
+        
+        for j = 1:N_Gamma
+            v4(j) = rhs4(Nodes_surf(j,:));
+        end
+        v4 = ML_surf * v4;
+        
+        v = [v1;v2;v3;v4;zeros(N_Gamma,1)];
+        fun = @(x) (K * x) + b + f_nonlin_LW1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, delta) - v ; % final funtion to solve
+        %}
         
         % sol_n = fsolve(fun, sol_n);
         
-        tol = 0.000000001;
+        tol = 0.000001;
         sol_n = newton_solver_LW1(ML_bulk, ML_surf, K, fun, N_Omega, N_Gamma, epsilon, delta, sol_n, tol);
         
         % update solution vector
