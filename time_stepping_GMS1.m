@@ -45,13 +45,7 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi,sol_zeta,sol_eta] = time_stepping_
         K((2 * N_Omega + 3 * N_Gamma + 1):(2 * N_Omega + 4 * N_Gamma),(N_Omega + 1):(2 * N_Omega)) = B;
         K((2 * N_Omega + 3 * N_Gamma + 1):(2 * N_Omega + 4 * N_Gamma),(2 * N_Omega + 2 * N_Gamma + 1):(2 * N_Omega + 3 * N_Gamma)) = - diag(ones(N_Gamma,1));
         
-    Z = spalloc((2*N_Omega + 4*N_Gamma), (2*N_Omega + 4*N_Gamma), 8*(N_Omega + N_Gamma));
-    
     [ML_bulk,ML_surf] = assembly_ML(Nodes_bulk,Elements_bulk,Nodes_surf,Elements_surf,N_Omega,N_Gamma);
-    
-        Z(1:N_Omega,1:N_Omega) = M_bulk;
-        Z((2 * N_Omega + N_Gamma + 1):(2 * N_Omega + 2 * N_Gamma),(2 * N_Omega + N_Gamma + 1):(2 * N_Omega + 2 * N_Gamma)) = M_surf;
-    norm(Z,"fro")/norm(K,"fro")
     
     %% loop
     
@@ -67,7 +61,7 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi,sol_zeta,sol_eta] = time_stepping_
     
     for i = 1:N
         
-        i % Step
+        %i % Step
         
         % construct rhs out of prevous step
         
@@ -82,11 +76,55 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi,sol_zeta,sol_eta] = time_stepping_
         
         b = [v_1; v_2; v_3; v_4; v_5; v_5]; % rhs
         
+        % true solution forCH LW1
+        %{
         fun = @(x) K * x + b + f_nonlin_GMS1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, delta); % final funtion to solve
+        %}
+        
+        % Inhomogenous rhs for convergence plot tests OG
+        %
+        rhs1 = @(x) -exp(-i*tau) * norm(x)^2 - 4 * sigma * exp(-i*tau);
+        v1 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v1(j) = rhs1(Nodes_bulk(j,:));
+        end
+        
+        v1 = tau * ML_bulk * v1; % Mass lumping for approximation
+        
+        rhs2 = @(x) - 4 * epsilon * exp(-i*tau) + 1/epsilon * (exp(-3*i*tau) * norm(x)^6 - exp(-i*tau) * norm(x)^2) -exp(-i*tau) * norm(x)^2;
+        v2 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v2(j) = rhs2(Nodes_bulk(j,:));
+        end
+        
+        v2 = ML_bulk * v2; % Mass lumping for approximation
+        
+        rhs3 = @(x) - exp(-i*tau) + 2 * sigma * exp(-i*tau);
+        v3 = zeros(N_Gamma,1);
+        
+        for j = 1:N_Gamma
+            v3(j) = rhs3(Nodes_surf(j,:));
+        end
+        v3 = tau * ML_surf * v3;
+        
+        
+        rhs4 = @(x) - 4 * delta * kappa * exp(-i*tau) * 0 + 1/delta * (exp(-3*i*tau) - exp(-i*tau)) + 2 * epsilon * exp(-i*tau) - exp(-i*tau);
+        v4 = zeros(N_Gamma,1);
+        
+        for j = 1:N_Gamma
+            v4(j) = rhs4(Nodes_surf(j,:));
+        end
+        v4 = ML_surf * v4;
+        
+        v = [v1;v2;v3;v4;zeros(2*N_Gamma,1)];
+        fun = @(x) (K * x) + b + f_nonlin_GMS1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, delta) - v ; % final funtion to solve
+        %}
         
         % sol_n = fsolve(fun, sol_n);
         
-        tol = 0.000000001;
+        tol = 0.000001;
         sol_n = newton_solver_GMS1(ML_bulk, ML_surf, K, fun, N_Omega, N_Gamma, epsilon, delta, sol_n, tol);
         
         % update solution vector
