@@ -49,21 +49,22 @@ function [sol_alpha,sol_beta] = time_stepping_HN1(S_bulk,M_bulk,Nodes_bulk, Elem
         b = [v_1; v_2]; % rhs
         
         % true solution for CH HN1
-        %
+        %{
         fun = @(x) (K * x) + b + (1/epsilon) * f_nonlin_HN(ML_bulk, x, N_Omega) ; % final funtion to solve
         %}
         
-        % Inhomogenous rhs for convergence plots
-        %{
-        rhs1 = @(x) -exp(-i*tau) * ((norm(x)^2 - 1)^2 + 2 * sigma * norm(x)^2);
+        % Inhomogenous rhs for convergence plots test OG
+        %
+        rhs1 = @(x) -exp(-i*tau) * (norm(x)^2 -1)^2 - 8 * sigma * exp(-i*tau) * (2*norm(x)^2 -1);
         v1 = zeros(N_Omega,1);
         
         for j = 1:N_Omega
             v1(j) = rhs1(Nodes_bulk(j,:));
         end
+        
         v1 = tau * ML_bulk * v1; % Mass lumping for approximation
         
-        rhs2 = @(x) -epsilon * 8 * exp(-i*tau) * (2*norm(x)^2 -1) + 1/epsilon * (exp(-3*tau*i) * (norm(x)^2 -1)^6 - exp(-i*tau) * (norm(x)^2 - 1)^2) - exp(-tau*i)*x(1)^2 *x(2)^2;
+        rhs2 = @(x) - 8 * epsilon * exp(-i*tau) * (2*norm(x)^2 -1) + 1/epsilon * (exp(-3*i*tau) * (norm(x)^2-1)^6 - exp(-i*tau) * (norm(x)^2-1)^2) -exp(-i*tau) * (norm(x)^2 -1)^2;
         v2 = zeros(N_Omega,1);
         
         for j = 1:N_Omega
@@ -87,7 +88,6 @@ function [sol_alpha,sol_beta] = time_stepping_HN1(S_bulk,M_bulk,Nodes_bulk, Elem
         % beta
         % sol(((N + i) * N_Omega + 1):((N + i + 1) * N_Omega),1) = sol_n((N_Omega + 1):(2 * N_Omega));
          sol_beta = [sol_beta, sol_n((N_Omega + 1):(2 * N_Omega))];
-        
         
     end
 end
