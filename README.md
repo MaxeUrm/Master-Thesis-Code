@@ -13,7 +13,8 @@ With these solutions we can create animations out of the solutions or study the 
 Some of this code uses the special structure of the decoupled weak formulation to set up different spartial and time related discretizations.
 This helps to handle the different rates of phase separation of the bulk and the boundary and get a better result.
 
-Finally we want to look at convergence of the systems. We expect order 1 for HN1, AC1, LW1 and GMS1.
+Finally we want to look at convergence of the systems. We expect order 1 for HN1, AC1, LW1 and GMS1. We obtain these plots by solving a 
+inhomogenous problem and compare the solution with the one the code computes.
 
 To understand the code better, there is a operation manual in the repository.
 
