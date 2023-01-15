@@ -48,7 +48,7 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi] = time_stepping_AC1(S_bulk,M_bulk
     
     for i = 1:N
         
-        i % Step
+        %i % Step
         
         % construct rhs out of prevous step
         
@@ -62,11 +62,46 @@ function [sol_alpha,sol_beta,sol_gamma,sol_xi] = time_stepping_AC1(S_bulk,M_bulk
         
         b = [v_1; v_2; v_3; v_4]; % rhs
         
+        % true solution for CH AC1
+        %{
         fun = @(x) K * x + b + f_nonlin_AC1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, tau, delta); % final funtion to solve
+        %}
+        
+        % Inhomogenous rhs for convergence plot tests OG
+        %
+        rhs1 = @(x) -exp(-i*tau) * norm(x)^2 - 8 * sigma * exp(-i*tau) * (2*norm(x)^2 -1);
+        v1 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v1(j) = rhs1(Nodes_bulk(j,:));
+        end
+        
+        v1 = tau * ML_bulk * v1; % Mass lumping for approximation
+        
+        rhs2 = @(x) - 4 * epsilon * exp(-i*tau) + 1/epsilon * (exp(-3*i*tau) * norm(x)^6 - exp(-i*tau) * norm(x)^2) -exp(-i*tau) * (norm(x)^2 -1)^2;
+        v2 = zeros(N_Omega,1);
+        
+        for j = 1:N_Omega
+            v2(j) = rhs2(Nodes_bulk(j,:));
+        end
+        
+        v2 = ML_bulk * v2; % Mass lumping for approximation
+        
+        rhs3 = @(x) -exp(-i*tau) - 4 * delta * kappa * exp(-i*tau) * 0 + 1/delta * (exp(-3*i*tau) - exp(-i*tau)) + 2 * epsilon * exp(-i*tau);
+        v3 = zeros(N_Gamma,1);
+        
+        for j = 1:N_Gamma
+            v3(j) = rhs3(Nodes_surf(j,:));
+        end
+        v3 = tau * ML_surf * v3;
+        
+        v = [v1;v2;v3;zeros(N_Gamma,1)];
+        fun = @(x) (K * x) + b + f_nonlin_AC1(ML_bulk, ML_surf, x, N_Omega, N_Gamma, epsilon, tau, delta) - v ; % final funtion to solve
+        %}
         
         % sol_n = fsolve(fun, sol_n)
         
-        tol = 0.000000001;
+        tol = 0.000001;
         sol_n = newton_solver_AC1(ML_bulk, ML_surf, K, fun, N_Omega, N_Gamma, epsilon, tau, delta, sol_n, tol);
         
         
